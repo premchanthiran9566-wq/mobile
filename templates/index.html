@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLSI Buddy - Chatbot</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    }
+
+    .chat-container {
+        width: 420px;
+        max-width: 95vw;
+        height: 640px;
+        background: #ffffff;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .chat-header {
+        background: #0b3d91;
+        color: #fff;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .chat-header h1 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .chat-header p {
+        font-size: 12px;
+        opacity: 0.8;
+        margin-top: 4px;
+    }
+
+    .chat-box {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #f4f6f8;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .user-message {
+        align-self: flex-end;
+        background: #0b3d91;
+        color: #fff;
+        border-bottom-right-radius: 2px;
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        background: #e4e9f0;
+        color: #1a1a1a;
+        border-bottom-left-radius: 2px;
+    }
+
+    .typing {
+        align-self: flex-start;
+        font-size: 13px;
+        color: #888;
+        font-style: italic;
+    }
+
+    .chat-input {
+        display: flex;
+        border-top: 1px solid #ddd;
+        padding: 10px;
+        background: #fff;
+    }
+
+    .chat-input input {
+        flex: 1;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .chat-input input:focus {
+        border-color: #0b3d91;
+    }
+
+    .chat-input button {
+        margin-left: 8px;
+        border: none;
+        background: #0b3d91;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .chat-input button:hover {
+        background: #082b66;
+    }
+
+    .chat-input button:disabled {
+        background: #999;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>VLSI Buddy 🤖</h1>
+        <p>Your VLSI study assistant - ask me anything about VLSI!</p>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        <div class="message bot-message">
+            Hi! I'm VLSI Buddy. Ask me anything about VLSI, digital design, HDL, ASIC/FPGA, or the chip design flow.
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Ask a VLSI question..." autocomplete="off">
+        <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById("chatBox");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message", sender === "user" ? "user-message" : "bot-message");
+        msgDiv.textContent = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showTyping() {
+        const typingDiv = document.createElement("div");
+        typingDiv.classList.add("typing");
+        typingDiv.id = "typingIndicator";
+        typingDiv.textContent = "VLSI Buddy is typing...";
+        chatBox.appendChild(typingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function hideTyping() {
+        const typingDiv = document.getElementById("typingIndicator");
+        if (typingDiv) {
+            typingDiv.remove();
+        }
+    }
+
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        appendMessage(message, "user");
+        userInput.value = "";
+        sendBtn.disabled = true;
+        showTyping();
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+            hideTyping();
+            appendMessage(data.reply, "bot");
+        } catch (error) {
+            hideTyping();
+            appendMessage("Error: could not reach the server.", "bot");
+        } finally {
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+
+    userInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
